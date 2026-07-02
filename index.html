@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hari G Financial Services — Customer Records</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --navy:#0d2436;
+    --navy-2:#123049;
+    --navy-3:#17405e;
+    --gold:#c99a3b;
+    --gold-light:#e8c877;
+    --paper:#f6f3ec;
+    --card:#ffffff;
+    --ink:#1c2530;
+    --ink-soft:#5b6673;
+    --line:#e1ddd0;
+    --danger:#a13a2c;
+    --ok:#2f6b4f;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI', Tahoma, Arial, sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+  }
+  header{
+    background:linear-gradient(180deg, var(--navy) 0%, var(--navy-2) 100%);
+    color:#fff;
+    padding:22px 28px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    border-bottom:3px solid var(--gold);
+  }
+  .brand{display:flex; align-items:center; gap:14px;}
+  .brand-mark{
+    width:46px;height:46px;border-radius:8px;
+    background:var(--gold);
+    color:var(--navy);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:700;font-size:20px;
+    font-family:Georgia, 'Times New Roman', serif;
+  }
+  .brand-text h1{margin:0;font-size:19px;letter-spacing:0.3px;font-weight:600;}
+  .brand-text p{margin:2px 0 0;font-size:12.5px;color:var(--gold-light);letter-spacing:0.5px;}
+  .header-stats{display:flex;gap:22px;}
+  .hstat{text-align:right;}
+  .hstat .n{font-size:20px;font-weight:700;color:var(--gold-light);}
+  .hstat .l{font-size:11px;color:#c9d3dc;text-transform:uppercase;letter-spacing:0.5px;}
+
+  main{max-width:1100px;margin:0 auto;padding:26px 20px 60px;}
+
+  .panel{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:20px 22px;
+    margin-bottom:22px;
+  }
+  .panel-title{
+    font-size:15px;font-weight:600;color:var(--navy);
+    margin:0 0 16px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .panel-title::before{
+    content:"";display:inline-block;width:4px;height:16px;background:var(--gold);border-radius:2px;
+  }
+
+  form{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 18px;}
+  .field{display:flex;flex-direction:column;gap:5px;}
+  .field.full{grid-column:1 / -1;}
+  label{font-size:12.5px;font-weight:600;color:var(--ink-soft);}
+  label .req{color:var(--danger);}
+  input, select, textarea{
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:9px 11px;
+    font-size:14px;
+    font-family:inherit;
+    background:#fdfcfa;
+    color:var(--ink);
+  }
+  input:focus, select:focus, textarea:focus{
+    outline:none;
+    border-color:var(--gold);
+    box-shadow:0 0 0 3px rgba(201,154,59,0.18);
+  }
+  textarea{resize:vertical;min-height:56px;}
+
+  .status-group{display:flex;gap:10px;}
+  .status-opt{
+    flex:1;border:1px solid var(--line);border-radius:7px;
+    padding:9px 6px;text-align:center;font-size:13px;cursor:pointer;
+    color:var(--ink-soft);user-select:none;
+  }
+  .status-opt.active-salaried{background:#eaf2fb;border-color:#5b8fc7;color:#2a4d75;font-weight:600;}
+  .status-opt.active-self{background:#fbeee0;border-color:#c98b3f;color:#7a4f16;font-weight:600;}
+
+  .conditional{display:none;}
+  .conditional.show{display:flex;}
+
+  .form-actions{
+    grid-column:1 / -1;
+    display:flex;justify-content:flex-end;gap:10px;margin-top:6px;
+  }
+  button{
+    font-family:inherit;font-size:14px;font-weight:600;
+    border-radius:7px;padding:10px 20px;cursor:pointer;border:1px solid transparent;
+  }
+  .btn-primary{background:var(--navy);color:#fff;}
+  .btn-primary:hover{background:var(--navy-3);}
+  .btn-secondary{background:#fff;border:1px solid var(--line);color:var(--ink-soft);}
+  .btn-secondary:hover{border-color:var(--ink-soft);}
+  .btn-danger-outline{background:#fff;border:1px solid #e3c9c2;color:var(--danger);}
+  .btn-danger-outline:hover{background:#fbf0ee;}
+
+  .toolbar{display:flex;gap:12px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+  .toolbar input[type=text]{flex:1;min-width:200px;}
+  .toolbar select{width:170px;}
+  .count-pill{
+    font-size:12.5px;color:var(--ink-soft);white-space:nowrap;
+    background:var(--paper);border:1px solid var(--line);
+    padding:8px 12px;border-radius:7px;
+  }
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  thead th{
+    text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:0.4px;
+    color:var(--ink-soft);border-bottom:2px solid var(--line);padding:10px 10px;
+    background:#faf8f3;
+  }
+  tbody td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top;}
+  tbody tr:hover{background:#fbf9f4;}
+  .cell-name{font-weight:600;color:var(--navy);}
+  .cell-sub{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .amt{font-weight:600;}
+
+  .badge{
+    display:inline-block;font-size:11.5px;font-weight:600;
+    padding:3px 9px;border-radius:20px;white-space:nowrap;
+  }
+  .badge-pending{background:#fdf1de;color:#8a5a12;}
+  .badge-approved{background:#e5f2ea;color:#1f6b45;}
+  .badge-disbursed{background:#e3ecf9;color:#1f4d8a;}
+  .badge-rejected{background:#fbeae7;color:#a13a2c;}
+  .badge-process{background:#f0ecf9;color:#5b3f9c;}
+
+  .row-actions{display:flex;gap:6px;}
+  .icon-btn{
+    border:1px solid var(--line);background:#fff;border-radius:6px;
+    width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;font-size:14px;color:var(--ink-soft);
+  }
+  .icon-btn:hover{border-color:var(--gold);color:var(--navy);}
+  .icon-btn.del:hover{border-color:var(--danger);color:var(--danger);}
+
+  .empty-state{
+    text-align:center;padding:40px 20px;color:var(--ink-soft);
+  }
+  .empty-state .big{font-size:15px;font-weight:600;color:var(--navy);margin-bottom:4px;}
+
+  .toast{
+    position:fixed;bottom:22px;right:22px;
+    background:var(--navy);color:#fff;
+    padding:12px 18px;border-radius:8px;font-size:13.5px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.2);
+    display:flex;align-items:center;gap:8px;
+    opacity:0;transform:translateY(8px);
+    transition:opacity .25s, transform .25s;
+    pointer-events:none;
+    z-index:999;
+    border-left:4px solid var(--gold);
+  }
+  .toast.show{opacity:1;transform:translateY(0);}
+
+  .note{font-size:12px;color:var(--ink-soft);margin-top:4px;}
+
+  @media(max-width:640px){
+    form{grid-template-columns:1fr;}
+    header{flex-direction:column;align-items:flex-start;gap:12px;}
+    .header-stats{width:100%;justify-content:space-between;}
+    table{display:block;overflow-x:auto;white-space:nowrap;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="brand-mark">HG</div>
+    <div class="brand-text">
+      <h1>Hari G Financial Services</h1>
+      <p>Customer &amp; loan record entry</p>
+    </div>
+  </div>
+  <div class="header-stats">
+    <div class="hstat">
+      <div class="n" id="statTotal">0</div>
+      <div class="l">Total customers</div>
+    </div>
+    <div class="hstat">
+      <div class="n" id="statAmount">₹0</div>
+      <div class="l">Total loan amount</div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <div class="panel">
+    <h2 class="panel-title" id="formTitle">Add new customer</h2>
+    <form id="customerForm">
+      <div class="field">
+        <label>Full name <span class="req">*</span></label>
+        <input type="text" id="f_name" placeholder="Customer ka pura naam" required>
+      </div>
+      <div class="field">
+        <label>Mobile number <span class="req">*</span></label>
+        <input type="tel" id="f_number" placeholder="10 digit mobile number" pattern="[0-9+ -]{7,15}" required>
+      </div>
+
+      <div class="field">
+        <label>Loan amount (₹) <span class="req">*</span></label>
+        <input type="number" id="f_loanAmount" placeholder="e.g. 150000" min="0" required>
+      </div>
+      <div class="field">
+        <label>Current status <span class="req">*</span></label>
+        <select id="f_status" required>
+          <option value="">Select status</option>
+          <option value="Pending">Pending</option>
+          <option value="In Process">In process</option>
+          <option value="Approved">Approved</option>
+          <option value="Disbursed">Disbursed</option>
+          <option value="Rejected">Rejected</option>
+        </select>
+      </div>
+
+      <div class="field full">
+        <label>Employment type <span class="req">*</span></label>
+        <div class="status-group">
+          <div class="status-opt" id="opt_salaried" onclick="setEmployment('Salaried')">Salaried employee</div>
+          <div class="status-opt" id="opt_self" onclick="setEmployment('Self-Employed')">Self-employed / business</div>
+        </div>
+        <input type="hidden" id="f_employment" required>
+      </div>
+
+      <div class="field conditional" id="wrap_company">
+        <label id="lbl_company">Company name</label>
+        <input type="text" id="f_company" placeholder="Company ka naam">
+      </div>
+      <div class="field conditional" id="wrap_salary">
+        <label>Monthly salary (₹)</label>
+        <input type="number" id="f_salary" placeholder="e.g. 35000" min="0">
+      </div>
+
+      <div class="field full">
+        <label>Address <span class="req">*</span></label>
+        <textarea id="f_address" placeholder="Poora address likhein" required></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" id="cancelEditBtn" style="display:none;" onclick="cancelEdit()">Cancel edit</button>
+        <button type="submit" class="btn-primary" id="submitBtn">Save customer</button>
+      </div>
+    </form>
+    <p class="note" id="saveNote">Data automatically save hoga aur sabhi devices/staff ko same records dikhenge.</p>
+  </div>
+
+  <div class="panel">
+    <h2 class="panel-title">Saved customers</h2>
+    <div class="toolbar">
+      <input type="text" id="searchBox" placeholder="Search by name, number, company...">
+      <select id="filterStatus">
+        <option value="">All status</option>
+        <option value="Pending">Pending</option>
+        <option value="In Process">In process</option>
+        <option value="Approved">Approved</option>
+        <option value="Disbursed">Disbursed</option>
+        <option value="Rejected">Rejected</option>
+      </select>
+      <div class="count-pill" id="resultCount">0 records</div>
+    </div>
+
+    <div id="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Loan amount</th>
+            <th>Employment</th>
+            <th>Status</th>
+            <th>Address</th>
+            <th style="text-align:right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState" style="display:none;">
+        <div class="big">Abhi koi record nahi hai</div>
+        <div>Upar form bharkar pehla customer add karein.</div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== SUPABASE CONFIG — ise apne Supabase project ki values se replace karein =====
+const SUPABASE_URL = 'https://fjrhyosgeisinstpawwa.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_Xfs0QEg2VDUV5-MdPK_CoQ_4GVqQQcv';
+// ====================================================================================
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let customers = [];
+let editingId = null;
+let currentEmployment = '';
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=> t.classList.remove('show'), 2200);
+}
+
+function setEmployment(type){
+  currentEmployment = type;
+  document.getElementById('f_employment').value = type;
+  document.getElementById('opt_salaried').classList.toggle('active-salaried', type==='Salaried');
+  document.getElementById('opt_self').classList.toggle('active-self', type==='Self-Employed');
+
+  const wrapCompany = document.getElementById('wrap_company');
+  const wrapSalary = document.getElementById('wrap_salary');
+  const lblCompany = document.getElementById('lbl_company');
+
+  if(type === 'Salaried'){
+    wrapCompany.classList.add('show');
+    wrapSalary.classList.add('show');
+    lblCompany.innerHTML = 'Company name (employer)';
+  } else if(type === 'Self-Employed'){
+    wrapCompany.classList.add('show');
+    wrapSalary.classList.remove('show');
+    document.getElementById('f_salary').value = '';
+    lblCompany.innerHTML = 'Business / company name';
+  } else {
+    wrapCompany.classList.remove('show');
+    wrapSalary.classList.remove('show');
+  }
+}
+
+function money(n){
+  n = Number(n) || 0;
+  return '₹' + n.toLocaleString('en-IN');
+}
+
+function statusBadgeClass(status){
+  switch(status){
+    case 'Pending': return 'badge-pending';
+    case 'Approved': return 'badge-approved';
+    case 'Disbursed': return 'badge-disbursed';
+    case 'Rejected': return 'badge-rejected';
+    case 'In Process': return 'badge-process';
+    default: return 'badge-pending';
+  }
+}
+
+async function loadCustomers(){
+  try{
+    const { data, error } = await supabaseClient
+      .from('customers')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if(error) throw error;
+    customers = (data || []).map(rowToRecord);
+  }catch(e){
+    console.error(e);
+    toast('Data load nahi ho paya — Supabase config check karein');
+    customers = [];
+  }
+  renderTable();
+}
+
+function rowToRecord(row){
+  return {
+    id: row.id,
+    name: row.name,
+    number: row.number,
+    loanAmount: row.loan_amount,
+    status: row.status,
+    employment: row.employment,
+    company: row.company,
+    salary: row.salary,
+    address: row.address,
+    createdAt: row.created_at
+  };
+}
+
+function recordToRow(record){
+  return {
+    id: record.id,
+    name: record.name,
+    number: record.number,
+    loan_amount: Number(record.loanAmount) || 0,
+    status: record.status,
+    employment: record.employment,
+    company: record.company || '',
+    salary: record.salary ? Number(record.salary) : null,
+    address: record.address,
+    created_at: record.createdAt
+  };
+}
+
+async function saveCustomer(record){
+  try{
+    const { error } = await supabaseClient
+      .from('customers')
+      .upsert(recordToRow(record), { onConflict: 'id' });
+    if(error) throw error;
+    return true;
+  }catch(e){
+    console.error(e);
+    toast('Save nahi ho paya, dobara try karein');
+    return false;
+  }
+}
+
+async function deleteCustomerById(id){
+  try{
+    const { error } = await supabaseClient
+      .from('customers')
+      .delete()
+      .eq('id', id);
+    if(error) throw error;
+    return true;
+  }catch(e){
+    console.error(e);
+    toast('Delete nahi ho paya');
+    return false;
+  }
+}
+
+function resetForm(){
+  document.getElementById('customerForm').reset();
+  setEmployment('');
+  editingId = null;
+  document.getElementById('formTitle').textContent = 'Add new customer';
+  document.getElementById('submitBtn').textContent = 'Save customer';
+  document.getElementById('cancelEditBtn').style.display = 'none';
+}
+
+function cancelEdit(){
+  resetForm();
+}
+
+document.getElementById('customerForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+
+  const employment = document.getElementById('f_employment').value;
+  if(!employment){
+    toast('Employment type select karein');
+    return;
+  }
+
+  const record = {
+    id: editingId || (Date.now().toString(36) + Math.random().toString(36).slice(2,7)),
+    name: document.getElementById('f_name').value.trim(),
+    number: document.getElementById('f_number').value.trim(),
+    loanAmount: document.getElementById('f_loanAmount').value,
+    status: document.getElementById('f_status').value,
+    employment: employment,
+    company: document.getElementById('f_company').value.trim(),
+    salary: document.getElementById('f_salary').value,
+    address: document.getElementById('f_address').value.trim(),
+    createdAt: editingId ? (customers.find(c=>c.id===editingId)||{}).createdAt || Date.now() : Date.now()
+  };
+
+  const submitBtn = document.getElementById('submitBtn');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Saving...';
+
+  const ok = await saveCustomer(record);
+
+  submitBtn.disabled = false;
+
+  if(ok){
+    toast(editingId ? 'Customer update ho gaya' : 'Customer save ho gaya');
+    resetForm();
+    await loadCustomers();
+  } else {
+    submitBtn.textContent = editingId ? 'Update customer' : 'Save customer';
+  }
+});
+
+function editCustomer(id){
+  const c = customers.find(x=>x.id===id);
+  if(!c) return;
+  editingId = id;
+  document.getElementById('f_name').value = c.name;
+  document.getElementById('f_number').value = c.number;
+  document.getElementById('f_loanAmount').value = c.loanAmount;
+  document.getElementById('f_status').value = c.status;
+  document.getElementById('f_company').value = c.company || '';
+  document.getElementById('f_salary').value = c.salary || '';
+  document.getElementById('f_address').value = c.address;
+  setEmployment(c.employment);
+
+  document.getElementById('formTitle').textContent = 'Edit customer';
+  document.getElementById('submitBtn').textContent = 'Update customer';
+  document.getElementById('cancelEditBtn').style.display = 'inline-block';
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+async function removeCustomer(id){
+  if(!confirm('Kya aap is customer ka record delete karna chahte hain?')) return;
+  const ok = await deleteCustomerById(id);
+  if(ok){
+    toast('Record delete ho gaya');
+    await loadCustomers();
+  }
+}
+
+function renderTable(){
+  const search = document.getElementById('searchBox').value.trim().toLowerCase();
+  const filterStatus = document.getElementById('filterStatus').value;
+
+  let filtered = customers.filter(c=>{
+    const hay = [c.name, c.number, c.company, c.address].join(' ').toLowerCase();
+    const matchesSearch = !search || hay.includes(search);
+    const matchesStatus = !filterStatus || c.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
+
+  const tbody = document.getElementById('tableBody');
+  const emptyState = document.getElementById('emptyState');
+  tbody.innerHTML = '';
+
+  document.getElementById('resultCount').textContent = filtered.length + ' record' + (filtered.length===1?'':'s');
+
+  if(filtered.length === 0){
+    emptyState.style.display = 'block';
+  } else {
+    emptyState.style.display = 'none';
+    filtered.forEach(c=>{
+      const tr = document.createElement('tr');
+
+      const empLabel = c.employment === 'Salaried'
+        ? 'Salaried' + (c.company ? ' — ' + escapeHtml(c.company) : '') + (c.salary ? '<div class="cell-sub">' + money(c.salary) + '/month</div>' : '')
+        : 'Self-employed' + (c.company ? ' — ' + escapeHtml(c.company) : '');
+
+      tr.innerHTML = `
+        <td>
+          <div class="cell-name">${escapeHtml(c.name)}</div>
+          <div class="cell-sub">${escapeHtml(c.number)}</div>
+        </td>
+        <td class="amt">${money(c.loanAmount)}</td>
+        <td>${empLabel}</td>
+        <td><span class="badge ${statusBadgeClass(c.status)}">${escapeHtml(c.status)}</span></td>
+        <td style="max-width:220px;white-space:normal;">${escapeHtml(c.address)}</td>
+        <td>
+          <div class="row-actions">
+            <div class="icon-btn" title="Edit" onclick="editCustomer('${c.id}')">&#9998;</div>
+            <div class="icon-btn del" title="Delete" onclick="removeCustomer('${c.id}')">&#10005;</div>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  document.getElementById('statTotal').textContent = customers.length;
+  const totalAmt = customers.reduce((sum,c)=> sum + (Number(c.loanAmount)||0), 0);
+  document.getElementById('statAmount').textContent = money(totalAmt);
+}
+
+function escapeHtml(str){
+  if(str === undefined || str === null) return '';
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+document.getElementById('searchBox').addEventListener('input', renderTable);
+document.getElementById('filterStatus').addEventListener('change', renderTable);
+
+loadCustomers();
+</script>
+
+</body>
+</html>
